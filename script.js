@@ -15,6 +15,7 @@ class Model {
         };
 
         this.todos.push(todo)
+        this.onTodoListChanged(this.todos)
     }
 
     // Map through all todos, and replace the text of the to-do with the specified id
@@ -22,11 +23,13 @@ class Model {
         this.todos = this.todos.map((todo) =>
             todo.id === id ? {id: todo.id, text: updatedText, complete: todo.complete} : todo
         )
+        this.onTodoListChanged(this.todos)
     }
 
     // Filter a to-do out of the array by id
     deleteTodo(id) {
         this.todos = this.todos.filter((todo) => todo.id !== id)
+        this.onTodoListChanged(this.todos)
     }
 
     // Flip the complete boolean on the specified to-do
@@ -34,7 +37,10 @@ class Model {
         this.todos = this.todos.map((todo) =>
             todo.id === id ? {id: todo.id, text: todo.text, complete: !todo.complete} : todo
         )
-
+        this.onTodoListChanged(this.todos)
+    }
+    bindTodoListChanged(callback){
+        this.onTodoListChanged = callback
     }
 }
 
@@ -88,21 +94,20 @@ class View {
         return document.querySelector(selector)
     }
 
-    displayTodos(todos){
+    displayTodos(todos) {
         // Delete all nodes
-        while (this.todoList.firstChild){
+        while (this.todoList.firstChild) {
             this.todoList.removeChild(this.todoList.firstChild)
         }
 
         //Show default message
-        if(todos.length===0){
+        if (todos.length === 0) {
             const p = this.createElement('p')
             p.textContent = 'Nothing to do ! Add a task ?'
             this.todoList.append(p)
-        }
-        else{
+        } else {
             // Create todo item nodes for each todo in state
-            todos.forEach(todo =>{
+            todos.forEach(todo => {
                 const li = this.createElement('li')
                 li.id = todo.id
 
@@ -117,20 +122,19 @@ class View {
                 span.classList.add('editable')
 
                 //if the todo is complete, it will have a strikethrough
-                if(todo.complete){
+                if (todo.complete) {
                     const strike = this.createElement('s');
                     strike.textContent = todo.text
                     span.append(strike)
-                }
-                else{
+                } else {
                     //Otherwise just display the text
                     span.textContent = todo.text
                 }
 
                 //The todos will alse have a delete button
-                const deleteButton = this.createElement('button','delete')
+                const deleteButton = this.createElement('button', 'delete')
                 deleteButton.textContent = 'Delete'
-                li.append(checkbox,span,deleteButton)
+                li.append(checkbox, span, deleteButton)
 
                 // Append nodes to the todo list
                 this.todoList.append(li)
@@ -138,13 +142,58 @@ class View {
         }
 
     }
+
+    bindAddTodo(handler) {
+        this.form.addEventListener('submit', (event) => {
+            event.preventDefault()
+            if (this._todoText) {
+                handler(this._todoText)
+                this._resetInput()
+            }
+        })
+    }
+
+    bindDeleteTodo(handler) {
+        this.todoList.addEventListener('click', (event) => {
+            if (event.target.className === 'delete') {
+                const id = parseInt(event.target.parentElement.id)
+                handler(id);
+            }
+        })
+    }
+
+    bindToggleTodo(handler) {
+        this.todoList.addEventListener('change', (event) => {
+            if (event.target.type === 'checkbox') {
+                const id = parseInt(event.target.parentElement.id)
+                handler(id)
+            }
+        })
+    }
 }
 
 class Controller {
     constructor(model, view) {
         this.model = model
         this.view = view
+
+        // Display initial todos
+        this.onTodoListChanged(this.model.todos)
+        this.view.bindAddTodo(this.handleAddTodo)
+        this.view.bindDeleteTodo(this.handleDeleteTodo)
+        this.view.bindToggleTodo(this.handleToggleTodo)
+        // this.view.bindEditTodo(this.handleEditTodo) - We'll do this one last
+        this.model.bindTodoListChanged(this.onTodoListChanged)
     }
+
+    onTodoListChanged = (todos) => this.view.displayTodos(todos)
+
+    handleAddTodo = (todoText) => this.model.addTodo(todoText)
+    handleEditTodo = (id, todoText) => this.model.editTodo(id, todoText)
+    handleDeleteTodo = (id) => this.model.deleteTodo(id)
+    handleToggleTodo = (id) => this.model.toggleTodo(id)
+
+
 }
 
 const app = new Controller(new Model(), new View())
