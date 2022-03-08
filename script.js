@@ -21,12 +21,13 @@ class Model {
     }
 
     // Map through all todos, and replace the text of the to-do with the specified id
-    editTodo(id, updatedText) {
-        this.todos = this.todos.map((todo) =>
-            todo.id === id ? {id: todo.id, text: updatedText, complete: todo.complete} : todo
-        )
-        this._commit(this.todos)
-    }
+  editTodo(id, updatedText) {
+    this.todos = this.todos.map(todo =>
+      todo.id === id ? { id: todo.id, text: updatedText, complete: todo.complete } : todo
+    )
+
+    this._commit(this.todos)
+  }
 
     // Filter a to-do out of the array by id
     deleteTodo(id) {
@@ -82,7 +83,7 @@ class View {
         //Append the tile, form, and todolist to the app
         this.app.append(this.title, this.form, this.todoList)
 
-        this._temporaryTodoText
+        this._temporaryTodoText = ''
         this._initLocalListeners()
     }
 
@@ -186,12 +187,13 @@ class View {
     bindEditTodo(handler) {
         this.todoList.addEventListener('focusout', (event) => {
             if (this._temporaryTodoText) {
-                const id = event.target.parentElement.id
+                const id = parseInt(event.target.parentElement.id)
                 handler(id, this._temporaryTodoText)
                 this._temporaryTodoText = ''
             }
         })
     }
+
 
     _initLocalListeners() {
         this.todoList.addEventListener('input', (event) => {
